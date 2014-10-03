@@ -47,13 +47,15 @@ class BetaReg(GenericLikelihoodModel):
 
         ll = lgamma(phi) - lgamma(mu * phi) - lgamma((1 - mu) * phi) \
                 + (mu * phi - 1) * np.log(y) + (((1 - mu) * phi) - 1) * np.log(1 - y)
-        print ll.sum()
         return ll
 
 if __name__ == "__main__":
 
     import pandas as pd
     dat = pd.read_table('gasoline.txt')
-    m = BetaReg.from_formula('iyield ~ C(batch) + temp', dat)
+    m = BetaReg.from_formula('iyield ~ C(batch, Treatment(10)) + temp', dat)
+
+    fex = pd.read_csv('foodexpenditure.csv')
+    m = BetaReg.from_formula(' I(food/income) ~ income + persons', fex)
     print m.fit().summary()
     #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
