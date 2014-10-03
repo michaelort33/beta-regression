@@ -6,6 +6,8 @@ from statsmodels.genmod.families import Binomial
 import statsmodels.api as sm
 
 #see http://cran.r-project.org/web/packages/betareg/vignettes/betareg-ext.pdf
+# nice reference:
+# http://psychology3.anu.edu.au/people/smithson/details/Pubs/Smithson_Verkuilen06.pdf
 
 class Logit(sm.families.links.Logit):
     def inverse(self, z):
