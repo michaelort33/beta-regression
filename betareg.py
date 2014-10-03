@@ -12,9 +12,9 @@ def ilogit(a):
 def logit(a):
     return np.log(p / (1. - p))
 
-class BetaBinomial(GenericLikelihoodModel):
+class BetaReg(GenericLikelihoodModel):
     def __init__(self, endog, exog, Z=None, **kwds):
-        super(BetaBinomial, self).__init__(endog, exog, **kwds)
+        super(BetaReg, self).__init__(endog, exog, **kwds)
         # how to set default Z?
         if Z is None:
             self.Z = np.ones((self.endog.shape[0], 1), dtype='f')
@@ -23,7 +23,7 @@ class BetaBinomial(GenericLikelihoodModel):
             assert len(self.Z) == len(self.endog)
 
     def nloglikeobs(self, params):
-        return -self._ll_bb(self.endog, self.exog, self.Z, params)
+        return -self._ll_br(self.endog, self.exog, self.Z, params)
 
     def fit(self, start_params=None, maxiter=1000000, maxfun=50000, **kwds):
         if start_params is None:
@@ -32,11 +32,11 @@ class BetaBinomial(GenericLikelihoodModel):
             #start_params = np.append(np.zeros(self.exog.shape[1]), 0.5)
         #self.exog[0] = np.mean(self.endog)
 
-        return super(BetaBinomial, self).fit(start_params=start_params,
+        return super(BetaReg, self).fit(start_params=start_params,
                                              maxiter=maxiter,
                                              maxfun=maxfun,
                                              **kwds)
-    def _ll_bb(self, y, X, Z, params):
+    def _ll_br(self, y, X, Z, params):
         nz = self.Z.shape[1]
 
         Xparams = params[:-nz]
@@ -54,5 +54,6 @@ if __name__ == "__main__":
 
     import pandas as pd
     dat = pd.read_table('gasoline.txt')
-    m = BetaBinomial.from_formula('iyield ~ C(batch) + temp', dat)
+    m = BetaReg.from_formula('iyield ~ C(batch) + temp', dat)
     print m.fit().summary()
+    #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
