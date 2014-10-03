@@ -4,6 +4,7 @@ from statsmodels.base.model import GenericLikelihoodModel
 from statsmodels.api import GLM
 from statsmodels.genmod.families import Binomial
 import statsmodels.api as sm
+import pandas as pd
 
 #see http://cran.r-project.org/web/packages/betareg/vignettes/betareg-ext.pdf
 # nice reference:
@@ -16,6 +17,7 @@ class Logit(sm.families.links.Logit):
 class BetaReg(GenericLikelihoodModel):
     def __init__(self, endog, exog, Z=None, link=Logit(),
             link_phi=sm.families.links.Log(), **kwds):
+        assert np.all((0 < endog) & (endog < 1))
 
         super(BetaReg, self).__init__(endog, exog, **kwds)
         self.link = link
@@ -26,15 +28,16 @@ class BetaReg(GenericLikelihoodModel):
         else:
             self.Z = np.asarray(Z)
             assert len(self.Z) == len(self.endog)
-
     def nloglikeobs(self, params):
         return -self._ll_br(self.endog, self.exog, self.Z, params)
 
     def fit(self, start_params=None, maxiter=1000000, maxfun=50000,
+            disp=False,
             method='bfgs', **kwds):
         if start_params is None:
-            start_params = GLM(self.endog, self.exog, family=Binomial()).fit().params
-            start_params = np.append(start_params, [1] * self.Z.shape[1])
+            start_params = GLM(self.endog, self.exog, family=Binomial()
+                              ).fit(disp=False).params
+            start_params = np.append(start_params, [0.5] * self.Z.shape[1])
             #start_params = np.append(np.zeros(self.exog.shape[1]), 0.5)
         #self.exog[0] = np.mean(self.endog)
 
@@ -42,6 +45,7 @@ class BetaReg(GenericLikelihoodModel):
                                              maxiter=maxiter,
                                              maxfun=maxfun,
                                              method=method,
+                                             disp=disp,
                                              **kwds)
     def _ll_br(self, y, X, Z, params):
         nz = self.Z.shape[1]
@@ -73,3 +77,9 @@ if __name__ == "__main__":
     m = BetaReg.from_formula(' I(food/income) ~ income + persons', fex)
     print m.fit().summary()
     #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
+
+    dev = pd.read_csv('methylation-test.csv')
+    dev['methylation'] = sm.families.links.Logit().inverse(dev['methylation'])
+    m = BetaReg.from_formula('methylation ~ age + gender', dev,
+            link_phi=sm.families.links.identity())
+    print m.fit().summary()
