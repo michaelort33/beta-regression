@@ -3,9 +3,16 @@ library(betareg)
 data("GasolineYield", package = "betareg")
 data("FoodExpenditure", package = "betareg")
 
-m = betareg(yield ~ batch + temp, data = GasolineYield)
-print(summary(m))
-
 fe_beta = betareg(I(food/income) ~ income + persons, data = FoodExpenditure)
 print(summary(fe_beta))
+
+
+m = betareg(yield ~ batch + temp, data = GasolineYield)
+#print(summary(m))
+
+
+
+gy2 <- betareg(yield ~ batch + temp | temp, data = GasolineYield, link.phi="identity")
+#print(summary(gy2))
+
 

@@ -6,6 +6,7 @@ from statsmodels.genmod.families import Binomial
 import statsmodels.api as sm
 
 #see http://cran.r-project.org/web/packages/betareg/vignettes/betareg-ext.pdf
+
 class Logit(sm.families.links.Logit):
     def inverse(self, z):
         return 1 / (1. + np.exp(-z))
@@ -31,7 +32,7 @@ class BetaReg(GenericLikelihoodModel):
             method='bfgs', **kwds):
         if start_params is None:
             start_params = GLM(self.endog, self.exog, family=Binomial()).fit().params
-            start_params = np.append(start_params, [0.5] * self.Z.shape[1])
+            start_params = np.append(start_params, [1] * self.Z.shape[1])
             #start_params = np.append(np.zeros(self.exog.shape[1]), 0.5)
         #self.exog[0] = np.mean(self.endog)
 
@@ -49,6 +50,8 @@ class BetaReg(GenericLikelihoodModel):
         mu = self.link.inverse(np.dot(X, Xparams))
         phi = self.link_phi.inverse(np.dot(Z, Zparams))
 
+        if np.any(phi <= np.finfo(float).eps): return np.array(-inf)
+
         ll = lgamma(phi) - lgamma(mu * phi) - lgamma((1 - mu) * phi) \
                 + (mu * phi - 1) * np.log(y) + (((1 - mu) * phi) - 1) * np.log(1 - y)
         return ll
@@ -56,8 +59,13 @@ class BetaReg(GenericLikelihoodModel):
 if __name__ == "__main__":
 
     import pandas as pd
+    import patsy
     dat = pd.read_table('gasoline.txt')
-    m = BetaReg.from_formula('iyield ~ C(batch, Treatment(10)) + temp', dat)
+    Z = patsy.dmatrix('~ temp', dat, return_type='dataframe')
+    # using other precison params with
+    m = BetaReg.from_formula('iyield ~ C(batch, Treatment(10)) + temp', dat,
+            Z=Z, link_phi=sm.families.links.identity())
+    print m.fit().summary()
 
     fex = pd.read_csv('foodexpenditure.csv')
     m = BetaReg.from_formula(' I(food/income) ~ income + persons', fex)
