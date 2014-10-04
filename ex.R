@@ -17,7 +17,6 @@ data("FoodExpenditure", package = "betareg")
 
 
 meth = read.csv('methylation-test.csv')
-meth$methylation = 1 / (1 + exp(-meth$methylation))
 m =  betareg(methylation ~ gender + CpG | age, meth)
 print(summary(m))
 

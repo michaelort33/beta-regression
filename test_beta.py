@@ -2,6 +2,7 @@
 # in R:
 import io
 import pandas as pd
+import patsy
 from betareg import Beta
 import numpy as np
 
@@ -37,14 +38,39 @@ expected_methylation_mean = pd.read_table(io.StringIO(_methylation_estimates_mea
 expected_methylation_precision = pd.read_table(io.StringIO(_methylation_estimates_precision), sep="\s+")
 
 income = pd.read_csv('foodexpenditure.csv')
+methylation = pd.read_csv('methylation-test.csv')
+
+def check_same(a, b, eps, name):
+    assert np.allclose(a, b, atol=eps), ("different from expected", name, list(a), list(b))
+
 
 def test_income_coefficients():
     model = "I(food/income) ~ income + persons"
 
     mod = Beta.from_formula(model, income)
     rslt = mod.fit()
-    assert np.allclose(rslt.params[:-1], expected_income_mean['Estimate'])
-    print rslt.tvalues
-    print expected_income_mean['zvalue']
-    assert np.allclose(rslt.tvalues[:-1], expected_income_mean['zvalue'], rtol=0.1)
+    yield check_same, rslt.params[:-1], expected_income_mean['Estimate'], 1e-3, "estimates"
+    yield check_same, rslt.tvalues[:-1], expected_income_mean['zvalue'], 0.1, "z-scores"
+    yield check_same, rslt.pvalues[:-1], expected_income_mean['Pr(>|z|)'], 1e-3, "p-values"
 
+
+def test_income_precision():
+    model = "I(food/income) ~ income + persons"
+
+    mod = Beta.from_formula(model, income)
+    rslt = mod.fit()
+    # note that we have to exp the phi results for now.
+    yield check_same, np.exp(rslt.params[-1:]), expected_income_precision['Estimate'], 1e-3, "estimate"
+    #yield check_same, rslt.tvalues[-1:], expected_income_precision['zvalue'], 0.1, "z-score"
+    yield check_same, rslt.pvalues[-1:], expected_income_precision['Pr(>|z|)'], 1e-3, "p-values"
+
+
+def test_methylation_coefficients():
+    model = "methylation ~ gender + CpG"
+    Z = patsy.dmatrix("~ age", methylation)
+
+    mod = Beta.from_formula(model, methylation, Z=Z)
+    rslt = mod.fit()
+    yield check_same, rslt.params[:-2], expected_methylation_mean['Estimate'], 1e-2, "estimates"
+    #yield check_same, rslt.tvalues[:-2], expected_methylation_mean['zvalue'], 0.1, "z-scores"
+    #yield check_same, rslt.pvalues[:-2], expected_methylation_mean['Pr(>|z|)'], 1e-3, "p-values"
