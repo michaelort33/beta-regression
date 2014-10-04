@@ -10,12 +10,13 @@ Grün, Bettina, Ioannis Kosmidis, and Achim Zeileis. Extended beta regression in
 Smithson, Michael, and Jay Verkuilen. "A better lemon squeezer? Maximum-likelihood regression with beta-distributed dependent variables." Psychological methods 11.1 (2006): 54.
 """
 import numpy as np
-from scipy.special import gammaln as lgamma
-from statsmodels.base.model import GenericLikelihoodModel
-from statsmodels.api import GLM
-from statsmodels.genmod.families import Binomial
-import statsmodels.api as sm
 import pandas as pd
+import statsmodels.api as sm
+
+from scipy.special import gammaln as lgamma
+
+from statsmodels.base.model import GenericLikelihoodModel
+from statsmodels.genmod.families import Binomial
 
 # this is only need while #2024 is open.
 class Logit(sm.families.links.Logit):
@@ -135,8 +136,8 @@ class Beta(GenericLikelihoodModel):
         """
 
         if start_params is None:
-            start_params = GLM(self.endog, self.exog, family=Binomial()
-                              ).fit(disp=False).params
+            start_params = sm.GLM(self.endog, self.exog, family=Binomial()
+                                 ).fit(disp=False).params
             start_params = np.append(start_params, [0.5] * self.Z.shape[1])
 
         return super(Beta, self).fit(start_params=start_params,
