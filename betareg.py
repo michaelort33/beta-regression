@@ -1,3 +1,6 @@
+"""
+Beta Regression.
+"""
 import numpy as np
 from scipy.special import gammaln as lgamma
 from statsmodels.base.model import GenericLikelihoodModel
@@ -11,10 +14,14 @@ import pandas as pd
 # http://psychology3.anu.edu.au/people/smithson/details/Pubs/Smithson_Verkuilen06.pdf
 
 class Logit(sm.families.links.Logit):
+    """Logit tranform that won't overflow with large numbers."""
     def inverse(self, z):
         return 1 / (1. + np.exp(-z))
 
 class BetaReg(GenericLikelihoodModel):
+
+    """Beta Regression."""
+
     def __init__(self, endog, exog, Z=None, link=Logit(),
             link_phi=sm.families.links.Log(), **kwds):
         assert np.all((0 < endog) & (endog < 1))
@@ -22,12 +29,13 @@ class BetaReg(GenericLikelihoodModel):
         super(BetaReg, self).__init__(endog, exog, **kwds)
         self.link = link
         self.link_phi = link_phi
-        # how to set default Z?
+        
         if Z is None:
             self.Z = np.ones((self.endog.shape[0], 1), dtype='f')
         else:
             self.Z = np.asarray(Z)
             assert len(self.Z) == len(self.endog)
+
     def nloglikeobs(self, params):
         return -self._ll_br(self.endog, self.exog, self.Z, params)
 
@@ -38,15 +46,14 @@ class BetaReg(GenericLikelihoodModel):
             start_params = GLM(self.endog, self.exog, family=Binomial()
                               ).fit(disp=False).params
             start_params = np.append(start_params, [0.5] * self.Z.shape[1])
-            #start_params = np.append(np.zeros(self.exog.shape[1]), 0.5)
-        #self.exog[0] = np.mean(self.endog)
 
         return super(BetaReg, self).fit(start_params=start_params,
-                                             maxiter=maxiter,
-                                             maxfun=maxfun,
-                                             method=method,
-                                             disp=disp,
-                                             **kwds)
+                                        maxiter=maxiter,
+                                        maxfun=maxfun,
+                                        method=method,
+                                        disp=disp,
+                                        **kwds)
+
     def _ll_br(self, y, X, Z, params):
         nz = self.Z.shape[1]
 
@@ -56,15 +63,16 @@ class BetaReg(GenericLikelihoodModel):
         mu = self.link.inverse(np.dot(X, Xparams))
         phi = self.link_phi.inverse(np.dot(Z, Zparams))
 
-        if np.any(phi <= np.finfo(float).eps): return np.array(-inf)
+        if np.any(phi <= np.finfo(float).eps): return np.array(-np.inf)
 
         ll = lgamma(phi) - lgamma(mu * phi) - lgamma((1 - mu) * phi) \
-                + (mu * phi - 1) * np.log(y) + (((1 - mu) * phi) - 1) * np.log(1 - y)
+                + (mu * phi - 1) * np.log(y) + (((1 - mu) * phi) - 1) \
+                * np.log(1 - y)
+
         return ll
 
 if __name__ == "__main__":
 
-    import pandas as pd
     import patsy
     dat = pd.read_table('gasoline.txt')
     Z = patsy.dmatrix('~ temp', dat, return_type='dataframe')
