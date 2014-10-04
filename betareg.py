@@ -182,6 +182,8 @@ if __name__ == "__main__":
     #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
 
     dev = pd.read_csv('methylation-test.csv')
-    m = Beta.from_formula('methylation ~ age + gender', dev,
+    Z = patsy.dmatrix('~ age', dev)
+    m = Beta.from_formula('methylation ~ gender + CpG', dev,
+            Z=Z,
             link_phi=sm.families.links.identity())
     print m.fit().summary()

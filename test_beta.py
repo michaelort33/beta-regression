@@ -1,6 +1,7 @@
 
 # in R:
 import io
+import statsmodels.api as sm
 import pandas as pd
 import patsy
 from betareg import Beta
@@ -20,14 +21,14 @@ varname  Estimate StdError  zvalue     Pr(>|z|)
 
 _methylation_estimates_mean = u"""\
 varname      Estimate StdError zvalue Pr(>|z|)    
-(Intercept)  1.44224    0.03401  42.404   <2e-16
+(Intercept)  1.44224    0.03401  42.404   2e-16
 genderM      0.06986    0.04359   1.603    0.109    
-CpGCpG_1     0.60735    0.04834  12.563   <2e-16
-CpGCpG_2     0.97355    0.05311  18.331   <2e-16"""
+CpGCpG_1     0.60735    0.04834  12.563   2e-16
+CpGCpG_2     0.97355    0.05311  18.331   2e-16"""
 
 _methylation_estimates_precision = u"""\
 varname Estimate StdError zvalue Pr(>|z|)    
-(Intercept)  8.22829    1.79098   4.594 4.34e-06 ***
+(Intercept)  8.22829    1.79098   4.594 4.34e-06
 age         -0.03471    0.03276  -1.059    0.289"""
 
 
@@ -41,7 +42,8 @@ income = pd.read_csv('foodexpenditure.csv')
 methylation = pd.read_csv('methylation-test.csv')
 
 def check_same(a, b, eps, name):
-    assert np.allclose(a, b, atol=eps), ("different from expected", name, list(a), list(b))
+    assert np.allclose(a, b, rtol=0.01, atol=eps), \
+            ("different from expected", name, list(a), list(b))
 
 
 def test_income_coefficients():
@@ -69,8 +71,18 @@ def test_methylation_coefficients():
     model = "methylation ~ gender + CpG"
     Z = patsy.dmatrix("~ age", methylation)
 
-    mod = Beta.from_formula(model, methylation, Z=Z)
+    mod = Beta.from_formula(model, methylation, Z=Z, link_phi=sm.families.links.identity())
     rslt = mod.fit()
     yield check_same, rslt.params[:-2], expected_methylation_mean['Estimate'], 1e-2, "estimates"
-    #yield check_same, rslt.tvalues[:-2], expected_methylation_mean['zvalue'], 0.1, "z-scores"
-    #yield check_same, rslt.pvalues[:-2], expected_methylation_mean['Pr(>|z|)'], 1e-3, "p-values"
+    yield check_same, rslt.tvalues[:-2], expected_methylation_mean['zvalue'], 0.1, "z-scores"
+    yield check_same, rslt.pvalues[:-2], expected_methylation_mean['Pr(>|z|)'], 1e-2, "p-values"
+
+def test_methylation_precision():
+    model = "methylation ~ gender + CpG"
+    Z = patsy.dmatrix("~ age", methylation)
+
+    mod = Beta.from_formula(model, methylation, Z=Z, link_phi=sm.families.links.identity())
+    rslt = mod.fit()
+    #yield check_same, sm.families.links.logit()(rslt.params[-2:]), expected_methylation_precision['Estimate'], 1e-3, "estimate"
+    #yield check_same, rslt.tvalues[-2:], expected_methylation_precision['zvalue'], 0.1, "z-score"
+
