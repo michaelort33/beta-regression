@@ -182,7 +182,6 @@ if __name__ == "__main__":
     #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
 
     dev = pd.read_csv('methylation-test.csv')
-    dev['methylation'] = sm.families.links.Logit().inverse(dev['methylation'])
     m = Beta.from_formula('methylation ~ age + gender', dev,
             link_phi=sm.families.links.identity())
     print m.fit().summary()
