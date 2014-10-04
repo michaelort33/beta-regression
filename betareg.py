@@ -96,18 +96,21 @@ class Beta(GenericLikelihoodModel):
         :ref:`links`
 
         """.format(example=_init_example)
-
         assert np.all((0 < endog) & (endog < 1))
+        if Z is None:
+            extra_names = ['phi']
+            Z = np.ones((len(endog), 1), dtype='f')
+        else:
+            extra_names = ['precision-%s' % zc for zc in \
+                        (Z.columns if hasattr(Z, 'columns') else range(1, Z.shape[1] + 1))]
+        kwds['extra_params_names'] = extra_names
 
         super(Beta, self).__init__(endog, exog, **kwds)
         self.link = link
         self.link_phi = link_phi
         
-        if Z is None:
-            self.Z = np.ones((self.endog.shape[0], 1), dtype='f')
-        else:
-            self.Z = np.asarray(Z)
-            assert len(self.Z) == len(self.endog)
+        self.Z = Z
+        assert len(self.Z) == len(self.endog)
 
     def nloglikeobs(self, params):
         """
@@ -182,7 +185,7 @@ if __name__ == "__main__":
     #print GLM.from_formula('iyield ~ C(batch) + temp', dat, family=Binomial()).fit().summary()
 
     dev = pd.read_csv('methylation-test.csv')
-    Z = patsy.dmatrix('~ age', dev)
+    Z = patsy.dmatrix('~ age', dev, return_type='dataframe')
     m = Beta.from_formula('methylation ~ gender + CpG', dev,
             Z=Z,
             link_phi=sm.families.links.identity())
