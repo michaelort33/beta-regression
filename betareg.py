@@ -5,9 +5,13 @@ Beta regression for modeling rates and proportions.
 
 References
 ----------
-Grün, Bettina, Ioannis Kosmidis, and Achim Zeileis. Extended beta regression in R: Shaken, stirred, mixed, and partitioned. No. 2011-22. Working Papers in Economics and Statistics, 2011.
+Grün, Bettina, Ioannis Kosmidis, and Achim Zeileis. Extended beta regression
+in R: Shaken, stirred, mixed, and partitioned. No. 2011-22. Working Papers in
+Economics and Statistics, 2011.
 
-Smithson, Michael, and Jay Verkuilen. "A better lemon squeezer? Maximum-likelihood regression with beta-distributed dependent variables." Psychological methods 11.1 (2006): 54.
+Smithson, Michael, and Jay Verkuilen. "A better lemon squeezer?
+Maximum-likelihood regression with beta-distributed dependent variables."
+Psychological methods 11.1 (2006): 54.
 """
 import numpy as np
 import pandas as pd
