@@ -19,11 +19,36 @@ import pandas as pd
 
 # this is only need while #2024 is open.
 class Logit(sm.families.links.Logit):
+
     """Logit tranform that won't overflow with large numbers."""
+
     def inverse(self, z):
         return 1 / (1. + np.exp(-z))
 
 _init_example = """
+
+    Beta regression with default of logit-link for exog and log-link
+    for precision.
+
+    >>> mod = Beta(endog, exog)
+    >>> rslt = mod.fit()
+    >>> print rslt.summary()
+
+    We can also specify a formula and a specific structure and use the
+    identity-link for phi.
+
+    >>> from sm.families.links import identity
+    >>> Z = patsy.dmatrix('~ temp', dat, return_type='dataframe')
+    >>> mod = Beta.from_formula('iyield ~ C(batch, Treatment(10)) + temp',
+    ...                         dat, Z=Z, link_phi=identity())
+
+    In the case of proportion-data, we may think that the precision depends on
+    the number of measurements. E.g for sequence data, on the number of
+    sequence reads covering a site:
+
+    >>> Z = patsy.dmatrix('~ coverage', df)
+    >>> mod = Beta.from_formula('methylation ~ disease + age + gender + coverage', df, Z)
+    >>> rslt = mod.fit()
 
 """
 
@@ -31,7 +56,7 @@ class Beta(GenericLikelihoodModel):
 
     """Beta Regression.
 
-    This implementation uses $\phi\$ as a precision parameter equal to
+    This implementation uses `phi` as a precision parameter equal to
     `a + b` from the Beta parameters.
     """
 
@@ -60,6 +85,11 @@ class Beta(GenericLikelihoodModel):
         Examples
         --------
         {example}
+
+        See Also
+        --------
+        :ref:`links`
+
         """.format(example=_init_example)
 
         assert np.all((0 < endog) & (endog < 1))
@@ -121,6 +151,7 @@ class Beta(GenericLikelihoodModel):
 
         mu = self.link.inverse(np.dot(X, Xparams))
         phi = self.link_phi.inverse(np.dot(Z, Zparams))
+        # TODO: derive a and b and constrain to > 0?
 
         if np.any(phi <= np.finfo(float).eps): return np.array(-np.inf)
 
