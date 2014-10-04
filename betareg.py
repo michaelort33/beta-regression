@@ -39,20 +39,17 @@ class BetaReg(GenericLikelihoodModel):
     def nloglikeobs(self, params):
         return -self._ll_br(self.endog, self.exog, self.Z, params)
 
-    def fit(self, start_params=None, maxiter=1000000, maxfun=50000,
-            disp=False,
+    def fit(self, start_params=None, maxiter=100000, maxfun=5000, disp=False,
             method='bfgs', **kwds):
+
         if start_params is None:
             start_params = GLM(self.endog, self.exog, family=Binomial()
                               ).fit(disp=False).params
             start_params = np.append(start_params, [0.5] * self.Z.shape[1])
 
         return super(BetaReg, self).fit(start_params=start_params,
-                                        maxiter=maxiter,
-                                        maxfun=maxfun,
-                                        method=method,
-                                        disp=disp,
-                                        **kwds)
+                                        maxiter=maxiter, maxfun=maxfun,
+                                        method=method, disp=disp, **kwds)
 
     def _ll_br(self, y, X, Z, params):
         nz = self.Z.shape[1]
